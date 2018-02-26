@@ -1,0 +1,61 @@
+.org 0
+	rjmp RESET
+.org	0x03
+digits:
+	.db 	0b10000000,0b10110011; 8/7 osv.. ned til 0 og e
+	.db 	0b10001000,0b10001001
+	.db 	0b11000011,0b10010001
+	.db 	0b10010100,0b11110011
+	.db 	0b10100000,0b10001100
+	.db 	0, 0			; zeros in case of overflow
+RESET:
+	; PORTC setup
+	ldi		R16, 0x00			; 
+	out		DDRC, R16			; Set PORTC as input
+	ldi		R16, 255			;
+	out 	PORTC,R16 			; Enable pull-up on PORTC
+			
+	; PORTB setup
+	out 	DDRB,R16 			; PORTB = output
+	ldi		R16, 0x55
+	out		PORTB, R16			; Turn LEDS off
+	ldi R20, 0xFF
+rjmp MAIN
+.equ SEG = 0b10000000
+MAIN:
+		in R16,  PINC;
+		ldi ZL, LOW(digits*2)
+		ldi ZH, HIGH(digits*2)
+		ldi R18, SEG;
+		ldi R19, 0;
+		cp R16, R18; //compare GFR
+	brne notEqual //hvis ikke er equal
+rjmp Equal
+notEqual:
+		inc R19 // skal inkrementeres før test
+		lsr R18 //left right bit!! samme som at dividere med 2
+		cp R16, R18 //compare de to adresser igen, hvis equal går den videre
+	breq Equal
+		and R18, R20 //hele lortet skal stoppe hvis de to her..
+	breq ZeroOrFail // jumper til ZeroOrFail
+rjmp notEqual //gentager sig indtil ZeroOrFail
+Equal:
+	add ZL, R19
+	lpm R16, Z
+	out PORTB, R16
+rjmp main
+ZeroOrFail:
+	in R16, PINC;
+	and R16, R20;
+	BRNE ZERO
+	ldi R19, 9;
+	add ZL, R19;
+	lpm R16, Z;
+	out PORTB, R16;
+rjmp main
+ZERO:
+	ldi R19, 9;
+	add ZL, R19;
+	lpm R16, Z;
+	out PORTB, R16;
+rjmp main
